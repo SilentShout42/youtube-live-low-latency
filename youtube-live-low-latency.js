@@ -1,8 +1,8 @@
 // Use it in the Developer Console in the same tab where YouTube Live is located
 // Configuration parameters
 const config = {
-    latencyThresholdFast: 1.5,        // Latency > 1.5s -> speed up
-    latencyThresholdSlow: 0.5,     // Latency < 0.5s -> slow down
+    latencyThresholdFast: 1.0,        // Latency > latencyThresholdFast -> speed up (adjust as needed, you can go lower if the connection is stable)
+    latencyThresholdSlow: 0.25,     // Latency < latencyThresholdSlow -> slow down (adjust as needed, you can go lower if the connection is stable)
     playbackRateFast: 1.1,         // Speed when fast
     playbackRateNormal: 1.0,       // Normal playback speed
     playbackRateSlow: 0.75,        // Speed when slow
