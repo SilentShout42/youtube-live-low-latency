@@ -27,7 +27,8 @@
     playbackRateNormal: 1.0,
     playbackRateSlow: 0.75,
     intervalMs: 500,
-    debugLogging: false
+    debugLogging: false,
+    loggingIntervalMs: 10000
   };
 
   async function getConfigValue(key, defaultValue) {
@@ -53,10 +54,11 @@
     playbackRateNormal: await getConfigValue('playbackRateNormal', defaultConfig.playbackRateNormal),
     playbackRateSlow: await getConfigValue('playbackRateSlow', defaultConfig.playbackRateSlow),
     intervalMs: await getConfigValue('intervalMs', defaultConfig.intervalMs),
-    debugLogging: await getConfigValue('debugLogging', defaultConfig.debugLogging)
+    debugLogging: await getConfigValue('debugLogging', defaultConfig.debugLogging),
+    loggingIntervalMs: await getConfigValue('loggingIntervalMs', defaultConfig.loggingIntervalMs) // New: Load logging interval
   };
 
-  // Start interval
+  // Start interval for playback adjustments
   const intervalId = setInterval(() => {
     const video = document.querySelector('video');
     if (!video) return;
@@ -72,12 +74,21 @@
     } else {
       video.playbackRate = config.playbackRateNormal; // Normal speed
     }
-
-    if (config.debugLogging) {
-      console.debug('[yt3l] Live Latency:', liveLatency.toFixed(2), 'seconds');
-      console.debug('[yt3l] Current Playback Rate:', video.playbackRate);
-    }
-
+    // Debug logging is now handled by a separate interval
   }, config.intervalMs);
+
+  // Start separate interval for debug logging if enabled
+  if (config.debugLogging) {
+    const loggingIntervalId = setInterval(() => {
+      const video = document.querySelector('video');
+      if (!video) return;
+
+      // Recalculate values at the time of logging
+      const currentLiveLatency = video.buffered.end(0) - video.currentTime;
+      const currentRate = video.playbackRate;
+
+      console.debug(`[yt3l] Live Latency: ${currentLiveLatency.toFixed(2)}s, Playback Rate: ${currentRate}`);
+    }, config.loggingIntervalMs);
+  }
 
 })();
