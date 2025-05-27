@@ -10,3 +10,4 @@ Install a userscript manager like [Violentmonkey](https://violentmonkey.github.i
 
 ## TODO
 - [ ] Automatically disable when we're not watching a live stream
+- [ ] See if we can change playback speed in a way that's  in the YouTube UI

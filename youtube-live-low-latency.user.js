@@ -58,22 +58,35 @@
     loggingIntervalMs: await getConfigValue('loggingIntervalMs', defaultConfig.loggingIntervalMs) // New: Load logging interval
   };
 
+  let lastPositiveLiveLatency = null;
+
   // Start interval for playback adjustments
-  const intervalId = setInterval(() => {
+  const adjustmentIntervalId = setInterval(() => {
     const video = document.querySelector('video');
     if (!video) return;
 
     // Calculate Live Latency
-    const liveLatency = video.buffered.end(0) - video.currentTime;
+    const currentLiveLatency = video.buffered.end(0) - video.currentTime;
+    let latencyToUse = currentLiveLatency;
+
+    if (currentLiveLatency <= 0 && lastPositiveLiveLatency !== null) {
+      latencyToUse = lastPositiveLiveLatency;
+    }
 
     // Adjust playback speed based on latency
-    if (liveLatency > config.latencyThresholdFast) {
+    if (latencyToUse > config.latencyThresholdFast) {
       video.playbackRate = config.playbackRateFast; // Speed up
-    } else if (liveLatency <= config.latencyThresholdSlow) {
+    } else if (latencyToUse <= config.latencyThresholdSlow) {
       video.playbackRate = config.playbackRateSlow; // Slow down
     } else {
       video.playbackRate = config.playbackRateNormal; // Normal speed
     }
+
+    // Store the current latency if it's positive for the next iteration
+    if (currentLiveLatency > 0) {
+      lastPositiveLiveLatency = currentLiveLatency;
+    }
+
     // Debug logging is now handled by a separate interval
   }, config.intervalMs);
 
