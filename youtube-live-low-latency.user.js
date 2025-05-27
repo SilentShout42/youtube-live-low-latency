@@ -58,36 +58,33 @@
     loggingIntervalMs: await getConfigValue('loggingIntervalMs', defaultConfig.loggingIntervalMs) // New: Load logging interval
   };
 
-  let lastPositiveLiveLatency = null;
+  let currentLiveLatency = 0; // Define currentLiveLatency in a shared scope
 
   // Start interval for playback adjustments
   const adjustmentIntervalId = setInterval(() => {
     const video = document.querySelector('video');
     if (!video) return;
 
-    // Calculate Live Latency
-    const currentLiveLatency = video.buffered.end(0) - video.currentTime;
-    let latencyToUse = currentLiveLatency;
-
-    if (currentLiveLatency <= 0 && lastPositiveLiveLatency !== null) {
-      latencyToUse = lastPositiveLiveLatency;
+    // Calculate Live Latency and update the shared variable
+    if (video.buffered && video.buffered.length > 0) {
+      let maxBufferedEnd = 0;
+      for (let i = 0; i < video.buffered.length; i++) {
+        maxBufferedEnd = Math.max(maxBufferedEnd, video.buffered.end(i));
+      }
+      currentLiveLatency = maxBufferedEnd - video.currentTime;
+    } else {
+      // No buffer information, or video not ready, treat as zero latency
+      currentLiveLatency = 0;
     }
 
-    // Adjust playback speed based on latency
-    if (latencyToUse > config.latencyThresholdFast) {
+    // Adjust playback speed based on the currentLiveLatency
+    if (currentLiveLatency > config.latencyThresholdFast) {
       video.playbackRate = config.playbackRateFast; // Speed up
-    } else if (latencyToUse <= config.latencyThresholdSlow) {
+    } else if (currentLiveLatency <= config.latencyThresholdSlow) {
       video.playbackRate = config.playbackRateSlow; // Slow down
     } else {
       video.playbackRate = config.playbackRateNormal; // Normal speed
     }
-
-    // Store the current latency if it's positive for the next iteration
-    if (currentLiveLatency > 0) {
-      lastPositiveLiveLatency = currentLiveLatency;
-    }
-
-    // Debug logging is now handled by a separate interval
   }, config.intervalMs);
 
   // Start separate interval for debug logging if enabled
@@ -96,8 +93,7 @@
       const video = document.querySelector('video');
       if (!video) return;
 
-      // Recalculate values at the time of logging
-      const currentLiveLatency = video.buffered.end(0) - video.currentTime;
+      // Use the shared currentLiveLatency calculated by the adjustment interval
       const currentRate = video.playbackRate;
 
       console.debug(`[yt3l] Live Latency: ${currentLiveLatency.toFixed(2)}s, Playback Rate: ${currentRate}`);
