@@ -21,8 +21,8 @@
 (async function () {
   // Default configuration values
   const defaultConfig = {
-    latencyThresholdFast: 1.0,
-    latencyThresholdSlow: 0.25,
+    BufferDurationThresholdFast: 1.0,
+    BufferDurationThresholdSlow: 0.25,
     playbackRateFast: 1.1,
     playbackRateNormal: 1.0,
     playbackRateSlow: 0.75,
@@ -48,8 +48,8 @@
 
   // Load configuration
   const config = {
-    latencyThresholdFast: await getConfigValue('latencyThresholdFast', defaultConfig.latencyThresholdFast),
-    latencyThresholdSlow: await getConfigValue('latencyThresholdSlow', defaultConfig.latencyThresholdSlow),
+    BufferDurationThresholdFast: await getConfigValue('BufferDurationThresholdFast', defaultConfig.BufferDurationThresholdFast),
+    BufferDurationThresholdSlow: await getConfigValue('BufferDurationThresholdSlow', defaultConfig.BufferDurationThresholdSlow),
     playbackRateFast: await getConfigValue('playbackRateFast', defaultConfig.playbackRateFast),
     playbackRateNormal: await getConfigValue('playbackRateNormal', defaultConfig.playbackRateNormal),
     playbackRateSlow: await getConfigValue('playbackRateSlow', defaultConfig.playbackRateSlow),
@@ -58,29 +58,29 @@
     loggingIntervalMs: await getConfigValue('loggingIntervalMs', defaultConfig.loggingIntervalMs) // New: Load logging interval
   };
 
-  let currentLiveLatency = 0; // Define currentLiveLatency in a shared scope
+  let currentBufferSize = 0; // Define currentBufferSize in a shared scope
 
   // Start interval for playback adjustments
   const adjustmentIntervalId = setInterval(() => {
     const video = document.querySelector('video');
     if (!video) return;
 
-    // Calculate Live Latency and update the shared variable
+    // Calculate Live BufferDuration and update the shared variable
     if (video.buffered && video.buffered.length > 0) {
       let maxBufferedEnd = 0;
       for (let i = 0; i < video.buffered.length; i++) {
         maxBufferedEnd = Math.max(maxBufferedEnd, video.buffered.end(i));
       }
-      currentLiveLatency = maxBufferedEnd - video.currentTime;
+      currentBufferSize = maxBufferedEnd - video.currentTime;
     } else {
-      // No buffer information, or video not ready, treat as zero latency
-      currentLiveLatency = 0;
+      // No buffer information, or video not ready, treat as zero BufferDuration
+      currentBufferSize = 0;
     }
 
-    // Adjust playback speed based on the currentLiveLatency
-    if (currentLiveLatency > config.latencyThresholdFast) {
+    // Adjust playback speed based on the currentBufferSize
+    if (currentBufferSize > config.BufferDurationThresholdFast) {
       video.playbackRate = config.playbackRateFast; // Speed up
-    } else if (currentLiveLatency <= config.latencyThresholdSlow) {
+    } else if (currentBufferSize <= config.BufferDurationThresholdSlow) {
       video.playbackRate = config.playbackRateSlow; // Slow down
     } else {
       video.playbackRate = config.playbackRateNormal; // Normal speed
@@ -93,10 +93,10 @@
       const video = document.querySelector('video');
       if (!video) return;
 
-      // Use the shared currentLiveLatency calculated by the adjustment interval
+      // Use the shared currentBufferSize calculated by the adjustment interval
       const currentRate = video.playbackRate;
 
-      console.debug(`[yt3l] Live Latency: ${currentLiveLatency.toFixed(2)}s, Playback Rate: ${currentRate}`);
+      console.debug(`[yt3l] Buffer Size: ${currentBufferSize.toFixed(2)}s, Playback Rate: ${currentRate}`);
     }, config.loggingIntervalMs);
   }
 
